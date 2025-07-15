@@ -1,7 +1,7 @@
 import { VNodeType } from "./types";
 
 export function normalizeVNode(vNode: VNodeType): VNodeType {
-  if (!vNode || typeof vNode === "boolean") {
+  if (vNode == null || typeof vNode === "boolean") {
     return "";
   }
 
