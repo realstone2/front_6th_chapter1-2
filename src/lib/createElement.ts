@@ -1,0 +1,60 @@
+import { addEvent } from "./eventManager";
+import { HtmlElementType, VNodeType } from "./types";
+
+export function createElement(vNode: VNodeType): HTMLElement | Text | DocumentFragment {
+  console.log("🚀 ~ createElement ~ vNode:", vNode);
+
+  if (vNode == null || typeof vNode === "boolean") {
+    return document.createTextNode("");
+  }
+
+  // 2. 문자열, 숫자 → 텍스트 노드
+  if (typeof vNode === "string" || typeof vNode === "number") {
+    return document.createTextNode(String(vNode));
+  }
+
+  // 3. 함수 → 함수 컴포넌트 호출
+  if (typeof vNode.type === "function") {
+    const result = vNode.type({ ...vNode.props, children: vNode.children?.map(createElement) });
+    return createElement(result);
+  }
+
+  // 4. 배열 → DocumentFragment
+  if (Array.isArray(vNode)) {
+    const fragment = document.createDocumentFragment();
+    vNode.forEach((child) => {
+      fragment.appendChild(createElement(child));
+    });
+    return fragment;
+  }
+
+  // 5. 객체(vNode) → 실제 DOM 요소 생성
+  const { type, props = {}, children = [] } = vNode;
+
+  const $el = document.createElement(type);
+
+  updateAttributes($el, props);
+
+  // children이 배열이 아닐 수도 있으니 배열로 변환
+  const childArray = Array.isArray(children) ? children : [children];
+  childArray.forEach((child) => {
+    $el.appendChild(createElement(child));
+  });
+
+  return $el;
+}
+
+function updateAttributes($el, props) {
+  for (const [key, value] of Object.entries(props || {})) {
+    if (key.startsWith("on") && typeof value === "function") {
+      // 이벤트 리스너
+      addEvent($el, key.slice(2).toLowerCase(), value);
+    } else if (key === "className") {
+      $el.className = value;
+    } else if (key === "style" && typeof value === "object") {
+      Object.assign($el.style, value);
+    } else {
+      $el.setAttribute(key, value);
+    }
+  }
+}
