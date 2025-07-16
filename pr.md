@@ -47,6 +47,9 @@
 
 vite config jsxFactory의 동작 방식
 
+createDocumentFragment DOM 트리의 일부가 되지는 않음
+조각을 생성하고, 추가
+
 <!-- 예시
 - 새로 학습한 개념
 - 기존 지식의 재발견/심화

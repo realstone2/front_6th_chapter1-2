@@ -1,5 +1,5 @@
-import { addEvent } from "./eventManager";
-import { HtmlElementType, VNodeType } from "./types";
+import { eventInstance } from "./eventManager";
+import { VNodeType } from "./types";
 
 export function createElement(vNode: VNodeType): HTMLElement | Text | DocumentFragment {
   console.log("🚀 ~ createElement ~ vNode:", vNode);
@@ -15,8 +15,7 @@ export function createElement(vNode: VNodeType): HTMLElement | Text | DocumentFr
 
   // 3. 함수 → 함수 컴포넌트 호출
   if (typeof vNode.type === "function") {
-    const result = vNode.type({ ...vNode.props, children: vNode.children?.map(createElement) });
-    return createElement(result);
+    throw new Error("error");
   }
 
   // 4. 배열 → DocumentFragment
@@ -48,7 +47,7 @@ function updateAttributes($el, props) {
   for (const [key, value] of Object.entries(props || {})) {
     if (key.startsWith("on") && typeof value === "function") {
       // 이벤트 리스너
-      addEvent($el, key.slice(2).toLowerCase(), value);
+      eventInstance.addEvent($el, key.slice(2).toLowerCase() as keyof HTMLElementEventMap, value);
     } else if (key === "className") {
       $el.className = value;
     } else if (key === "style" && typeof value === "object") {
