@@ -1,4 +1,4 @@
-import { setupEventListeners, removeEventListener2 } from "./eventManager";
+import { setupEventListeners } from "./eventManager";
 import { createElement } from "./createElement";
 import { normalizeVNode } from "./normalizeVNode";
 import { updateElement } from "./updateElement";

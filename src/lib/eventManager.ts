@@ -49,7 +49,7 @@ const createEventInstance = () => {
         let target = event.target as HTMLElement | null;
         for (const [element, eventMap] of elementEventMap.entries()) {
           if (element.contains(target)) {
-            const handler = eventMap.get(type);
+            const handler = eventMap.get(type as keyof HTMLElementEventMap);
             if (handler) handler.call(element, event);
           }
         }
