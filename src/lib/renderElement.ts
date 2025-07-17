@@ -14,14 +14,16 @@ export function renderElement(vNode: VNodeType, container: HTMLElement) {
   // 이전에 렌더링한 VNode가 있는지 확인
   const prevVNode = containerVNodeMap.get(container);
 
+  const element = createElement(normalizedVNode);
+
   if (!prevVNode) {
     // 최초 렌더링
-    const element = createElement(normalizedVNode);
     container.innerHTML = "";
-    container.appendChild(element);
+    container.replaceChildren(element);
   } else {
     // 리렌더링
-    updateElement(container, normalizedVNode, prevVNode, 0);
+    container.replaceChildren(element);
+    // updateElement(container, normalizedVNode, prevVNode, 0);
   }
 
   // 현재 VNode 저장
