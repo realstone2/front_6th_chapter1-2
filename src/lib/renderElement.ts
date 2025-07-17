@@ -13,7 +13,7 @@ export function renderElement(vNode: NormalizeVNodeType, container: HTMLElement)
   // 이전에 렌더링한 VNode가 있는지 확인
   const prevVNode = containerVNodeMap.get(container);
 
-  if (!prevVNode) {
+  if (true) {
     const normalizedVNode = normalizeVNode(vNode);
     const element = createElement(normalizedVNode);
     // 최초 렌더링
