@@ -43,21 +43,73 @@ function updateAttributes(target: HTMLElement, originNewProps: PropsType, origin
 
     if (attr === "className") {
       target.setAttribute("class", value);
-    } else if (attr === "style" && typeof value === "object") {
-      Object.assign(target.style, value);
-    } else {
-      target.setAttribute(attr, value);
+      continue;
     }
+    if (attr === "style" && typeof value === "object") {
+      Object.assign(target.style, value);
+      continue;
+    }
+    if (typeof value === "boolean") {
+      target[attr] = value;
+      continue;
+    }
+
+    target.setAttribute(attr, value);
   }
 
   // 삭제할 props 처리
   for (const attr of propsToRemove) {
     if (attr.startsWith("on")) {
       removeEvent(target, attr.slice(2).toLowerCase() as keyof HTMLElementEventMap, oldProps[attr] as EventListener);
-    } else {
-      target.removeAttribute(attr);
+      continue;
     }
+    if (attr === "className") {
+      target.removeAttribute("class");
+      continue;
+    }
+
+    target.removeAttribute(attr);
   }
 }
 
-export function updateElement(parentElement, newNode, oldNode, index = 0) {}
+export function updateElement(parentElement, newNode, oldNode, index = 0) {
+  // 1. 노드 제거 (newNode가 없고 oldNode가 있는 경우)
+  if (!newNode && oldNode) {
+    parentElement.removeChild(parentElement.childNodes[index]);
+    return;
+  }
+
+  // 2. 새 노드 추가 (newNode가 있고 oldNode가 없는 경우)
+  if (newNode && !oldNode) {
+    parentElement.appendChild(createElement(newNode));
+    return;
+  }
+
+  // 3. 텍스트 노드 업데이트
+  if (typeof newNode === "string" || typeof oldNode === "string") {
+    if (newNode !== oldNode) {
+      parentElement.replaceChild(document.createTextNode(String(newNode)), parentElement.childNodes[index]);
+    }
+    return;
+  }
+
+  // 4. 노드 교체 (newNode와 oldNode의 타입이 다른 경우)
+  if (newNode.type !== oldNode.type) {
+    parentElement.replaceChild(createElement(newNode), parentElement.childNodes[index]);
+    return;
+  }
+
+  // 5. 같은 타입의 노드 업데이트
+  // - 속성 업데이트
+  const element = parentElement.childNodes[index] as HTMLElement;
+  updateAttributes(element, newNode.props || {}, oldNode.props || {});
+
+  // - 자식 노드 재귀적 업데이트
+  const newChildren = newNode.children || [];
+  const oldChildren = oldNode.children || [];
+  const maxLength = Math.max(newChildren.length, oldChildren.length);
+
+  for (let i = 0; i < maxLength; i++) {
+    updateElement(element, newChildren[i], oldChildren[i], i);
+  }
+}

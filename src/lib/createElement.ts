@@ -48,12 +48,23 @@ function updateAttributes($el, props) {
     if (key.startsWith("on") && typeof value === "function") {
       // 이벤트 리스너
       eventInstance.addEvent($el, key.slice(2).toLowerCase() as keyof HTMLElementEventMap, value as EventListener);
-    } else if (key === "className") {
-      $el.className = value;
-    } else if (key === "style" && typeof value === "object") {
-      Object.assign($el.style, value);
-    } else {
-      $el.setAttribute(key, value);
+      continue;
     }
+    if (key === "className") {
+      $el.className = value;
+      continue;
+    }
+
+    if (key === "style" && typeof value === "object") {
+      Object.assign($el.style, value);
+      continue;
+    }
+
+    if (typeof value === "boolean") {
+      $el[key] = value;
+      continue;
+    }
+
+    $el.setAttribute(key, value);
   }
 }
