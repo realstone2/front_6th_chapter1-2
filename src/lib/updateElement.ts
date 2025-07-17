@@ -1,6 +1,6 @@
 import { addEvent, eventInstance, removeEvent } from "./eventManager";
 import { createElement } from "./createElement.js";
-import { PropsType } from "./types.js";
+import { NormalizeVNodeType, PropsType, VNodeType } from "./types.js";
 
 function compareProps(newProps: PropsType, oldProps: PropsType) {
   const propsToAdd: PropsType = {};
@@ -26,7 +26,9 @@ function compareProps(newProps: PropsType, oldProps: PropsType) {
 function updateAttributes(target: HTMLElement, originNewProps: PropsType, originOldProps: PropsType) {
   const newProps = { ...originNewProps };
   const oldProps = { ...originOldProps };
+  console.log("🚀 ~ updateAttributes ~ newProps:", newProps);
 
+  console.log("🚀 ~ updateAttributes ~ oldProps:", oldProps);
   const { propsToAdd, propsToRemove } = compareProps(newProps, oldProps);
 
   // 추가/변경된 Props를 반영
@@ -49,6 +51,19 @@ function updateAttributes(target: HTMLElement, originNewProps: PropsType, origin
       Object.assign(target.style, value);
       continue;
     }
+
+    // disabled, selected, readOnly 등 다른 boolean 속성들
+    if (attr === "disabled" || attr === "selected" || attr === "readOnly" || attr === "checked") {
+      console.log("🐶 jindol log ", "???", attr);
+      target[attr] = value;
+      if (value) {
+        target.setAttribute(attr.toLowerCase(), "");
+      } else {
+        target.removeAttribute(attr.toLowerCase());
+      }
+      continue;
+    }
+
     if (typeof value === "boolean") {
       target[attr] = value;
       continue;
@@ -72,7 +87,12 @@ function updateAttributes(target: HTMLElement, originNewProps: PropsType, origin
   }
 }
 
-export function updateElement(parentElement, newNode, oldNode, index = 0) {
+export function updateElement(
+  parentElement: Element,
+  newNode: NormalizeVNodeType,
+  oldNode: NormalizeVNodeType,
+  index = 0,
+) {
   // 1. 노드 제거 (newNode가 없고 oldNode가 있는 경우)
   if (!newNode && oldNode) {
     parentElement.removeChild(parentElement.childNodes[index]);
@@ -84,15 +104,13 @@ export function updateElement(parentElement, newNode, oldNode, index = 0) {
     parentElement.appendChild(createElement(newNode));
     return;
   }
-
   // 3. 텍스트 노드 업데이트
   if (typeof newNode === "string" || typeof oldNode === "string") {
-    if (newNode !== oldNode) {
-      parentElement.replaceChild(document.createTextNode(String(newNode)), parentElement.childNodes[index]);
+    if (newNode != oldNode) {
+      parentElement.replaceChild(document.createTextNode(newNode.toString()), parentElement.childNodes[index]);
     }
     return;
   }
-
   // 4. 노드 교체 (newNode와 oldNode의 타입이 다른 경우)
   if (newNode.type !== oldNode.type) {
     parentElement.replaceChild(createElement(newNode), parentElement.childNodes[index]);
@@ -103,12 +121,10 @@ export function updateElement(parentElement, newNode, oldNode, index = 0) {
   // - 속성 업데이트
   const element = parentElement.childNodes[index] as HTMLElement;
   updateAttributes(element, newNode.props || {}, oldNode.props || {});
-
   // - 자식 노드 재귀적 업데이트
   const newChildren = newNode.children || [];
   const oldChildren = oldNode.children || [];
   const maxLength = Math.max(newChildren.length, oldChildren.length);
-
   for (let i = 0; i < maxLength; i++) {
     updateElement(element, newChildren[i], oldChildren[i], i);
   }

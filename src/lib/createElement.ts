@@ -2,8 +2,6 @@ import { eventInstance } from "./eventManager";
 import { VNodeType } from "./types";
 
 export function createElement(vNode: VNodeType): HTMLElement | Text | DocumentFragment {
-  console.log("🚀 ~ createElement ~ vNode:", vNode);
-
   if (vNode == null || typeof vNode === "boolean") {
     return document.createTextNode("");
   }

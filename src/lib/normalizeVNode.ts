@@ -1,12 +1,12 @@
-import { VNodeType } from "./types";
+import { NormalizeVNodeType, VNodeType } from "./types";
 
-export function normalizeVNode(vNode: VNodeType): VNodeType {
+export function normalizeVNode(vNode: VNodeType): NormalizeVNodeType {
   if (vNode == null || typeof vNode === "boolean") {
     return "";
   }
 
   if (typeof vNode === "string" || typeof vNode === "number") {
-    return String(vNode);
+    return vNode.toString();
   }
 
   if (typeof vNode.type === "function") {

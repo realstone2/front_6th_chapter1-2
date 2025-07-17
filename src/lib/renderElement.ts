@@ -2,33 +2,38 @@ import { setupEventListeners } from "./eventManager";
 import { createElement } from "./createElement";
 import { normalizeVNode } from "./normalizeVNode";
 import { updateElement } from "./updateElement";
-import { VNodeType } from "./types";
+import { NormalizeVNodeType, VNodeType } from "./types";
 
 // 이전 VNode를 저장할 맵 (컨테이너별)
-const containerVNodeMap = new WeakMap<HTMLElement, VNodeType>();
+const containerVNodeMap = new WeakMap<HTMLElement, NormalizeVNodeType>();
 
-export function renderElement(vNode: VNodeType, container: HTMLElement) {
+export function renderElement(vNode: NormalizeVNodeType, container: HTMLElement) {
   // vNode를 정규화
-  const normalizedVNode = normalizeVNode(vNode);
 
   // 이전에 렌더링한 VNode가 있는지 확인
   const prevVNode = containerVNodeMap.get(container);
 
-  const element = createElement(normalizedVNode);
-
   if (!prevVNode) {
+    const normalizedVNode = normalizeVNode(vNode);
+    const element = createElement(normalizedVNode);
     // 최초 렌더링
     container.innerHTML = "";
     container.replaceChildren(element);
-  } else {
-    // 리렌더링
-    container.replaceChildren(element);
-    // updateElement(container, normalizedVNode, prevVNode, 0);
+    containerVNodeMap.set(container, normalizedVNode);
+    setupEventListeners(container);
+    return;
   }
 
+  const newNormalizedVNode = normalizeVNode(vNode);
+  const newElement = createElement(newNormalizedVNode);
+
+  // 리렌더링
+  // container.replaceChildren(element);
+  updateElement(container, newNormalizedVNode, prevVNode, 0);
+  setupEventListeners(container);
+  containerVNodeMap.set(container, newNormalizedVNode); // 이전 VNode 업데이트
+
   // 현재 VNode 저장
-  containerVNodeMap.set(container, normalizedVNode);
 
   // 이벤트 위임 등록
-  setupEventListeners(container);
 }

@@ -18,6 +18,7 @@ export const HtmlElementTypes = [
 export type HtmlElementType = (typeof HtmlElementTypes)[number];
 
 export type ChildrenType = VNodeType;
+export type NormalizeChildrenType = NormalizeVNodeType;
 
 export type ElementType = ((props: PropsType) => VNodeType) | HtmlElementType;
 export type PropsType = Record<string, any>;
@@ -35,6 +36,14 @@ export type VNodeType =
   | boolean
   | null
   | undefined;
+
+export type NormalizeVNodeType =
+  | {
+      type: HtmlElementType | ((props: PropsType) => VNodeType);
+      props: Record<string, any>; //TODO: 각 Type별로 props 타입 정의
+      children?: Array<NormalizeChildrenType>;
+    }
+  | string;
 
 export function isVNodeType(obj: any): obj is VNodeType {
   return obj && typeof obj === "object" && "type" in obj && "props" in obj && "children" in obj;
