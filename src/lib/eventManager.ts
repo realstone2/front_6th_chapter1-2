@@ -1,50 +1,57 @@
-import { HtmlElementType } from "./types";
-
 // element별로 이벤트 핸들러를 관리하는 WeakMap
 const createEventInstance = () => {
-  const handlerMap = new Map<HTMLElement, Map<string, EventListener>>();
+  const elementEventMap = new Map<HTMLElement, Map<keyof HTMLElementEventMap, EventListener>>();
 
-  function removeEvent(element: HTMLElement, eventType: string, handler: EventListener) {
-    const eventMap = handlerMap.get(element);
+  function removeEvent(element: HTMLElement, eventType: keyof HTMLElementEventMap, handler: EventListener) {
+    const eventMap = elementEventMap.get(element);
     if (eventMap) {
       eventMap.delete(eventType);
       if (eventMap.size === 0) {
-        handlerMap.delete(element);
+        elementEventMap.delete(element);
       }
     }
   }
 
   function addEvent<T extends keyof HTMLElementEventMap>(element: HTMLElement, eventType: T, handler: EventListener) {
-    // 기존에 등록된 핸들러가 있으면 제거
-    const eventMap = handlerMap.get(element) || new Map<string, EventListener>();
+    // const eventMap = eventInstanceMap.get(element) || new Map<keyof HTMLElementEventMap, EventListener>();
+
+    const eventMap = new Map<keyof HTMLElementEventMap, EventListener>();
 
     eventMap.set(eventType, handler);
-    handlerMap.set(element, eventMap);
+
+    elementEventMap.set(element, eventMap);
   }
 
+  // root별로 등록된 이벤트 타입을 추적
+  const rootRegisteredTypes = new WeakMap<HTMLElement, Set<string>>();
+
   function setupEventListeners(root: HTMLElement) {
+    if (!rootRegisteredTypes.has(root)) {
+      rootRegisteredTypes.set(root, new Set());
+    }
+    const registeredTypes = rootRegisteredTypes.get(root)!;
+
     // handlerMap에 등록된 모든 이벤트 타입을 수집
     const eventTypes = new Set<string>();
-    for (const eventMap of handlerMap.values()) {
+    for (const eventMap of elementEventMap.values()) {
       for (const type of eventMap.keys()) {
         eventTypes.add(type);
       }
     }
 
-    // 각 이벤트 타입마다 위임 방식으로 리스너 등록
+    // 각 이벤트 타입마다 한 번만 리스너 등록
     eventTypes.forEach((type) => {
-      root.addEventListener(type, (event) => {
-        console.log("🚀 ~ root.addEventListener ~ type:", type);
+      if (registeredTypes.has(type)) return;
 
+      registeredTypes.add(type);
+
+      root.addEventListener(type, (event) => {
         let target = event.target as HTMLElement | null;
-        while (target && target !== root) {
-          const eventMap = handlerMap.get(target);
-          if (eventMap && eventMap.has(type)) {
+        for (const [element, eventMap] of elementEventMap.entries()) {
+          if (element.contains(target)) {
             const handler = eventMap.get(type);
-            if (handler) handler.call(target, event);
-            break;
+            if (handler) handler.call(element, event);
           }
-          target = target.parentElement;
         }
       });
     });
