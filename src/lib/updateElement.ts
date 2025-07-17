@@ -1,5 +1,5 @@
 import { addEvent, eventInstance, removeEvent } from "./eventManager";
-import { createElement } from "./createElement.js";
+import { createElement } from "./createElement";
 import { NormalizeVNodeType, PropsType } from "./types.js";
 
 function compareProps(newProps: PropsType, oldProps: PropsType) {
@@ -24,6 +24,9 @@ function compareProps(newProps: PropsType, oldProps: PropsType) {
 }
 
 function updateAttributes(target: HTMLElement, originNewProps: PropsType, originOldProps: PropsType) {
+  if (!target) {
+    return;
+  }
   const newProps = { ...originNewProps };
   const oldProps = { ...originOldProps };
 
@@ -72,42 +75,69 @@ function updateAttributes(target: HTMLElement, originNewProps: PropsType, origin
   }
 }
 
-export function updateElement(parent: Element, newNode: NormalizeVNodeType, oldNode: NormalizeVNodeType, index = 0) {
+export function updateElement(parent?: Element, newNode?: NormalizeVNodeType, oldNode?: NormalizeVNodeType, index = 0) {
   // 1. 노드 제거 (newNode가 없고 oldNode가 있는 경우)
   if (!newNode && oldNode) {
-    return parent.removeChild(parent.childNodes[index]);
+    const childNode = parent?.childNodes[index];
+
+    if (!childNode) {
+      return;
+    }
+
+    parent?.removeChild(childNode);
+    return;
   }
 
   // 2. 새 노드 추가 (newNode가 있고 oldNode가 없는 경우)
-  if (newNode && !oldNode) {
-    return parent.appendChild(createElement(newNode));
+  if (!oldNode && newNode) {
+    parent?.appendChild(createElement(newNode));
+    return;
   }
 
   // 3. 텍스트 노드 업데이트
-  if (typeof newNode === "string" || typeof oldNode === "string") {
+  if (typeof newNode === "string" || typeof newNode === "number") {
     if (newNode === oldNode) {
       return;
     }
 
-    return parent.replaceChild(createElement(newNode), parent.childNodes[index]);
+    parent?.replaceChild(document.createTextNode(newNode.toString()), parent?.childNodes[index]);
+    return;
   }
 
-  // 4. 노드 교체 (newNode와 oldNode의 타입이 다른 경우)
-  if (newNode.type !== oldNode.type) {
-    return parent.replaceChild(createElement(newNode), parent.childNodes[index]);
+  if (
+    typeof newNode === "object" &&
+    typeof oldNode === "object" &&
+    newNode !== null &&
+    oldNode !== null &&
+    "type" in newNode &&
+    "type" in oldNode &&
+    (newNode as any).type !== (oldNode as any).type
+  ) {
+    parent?.replaceChild(createElement(newNode), parent?.childNodes[index]);
+    return;
   }
 
   // 5. 같은 타입의 노드 업데이트
   // - 속성 업데이트
-  const element = parent.childNodes[index] as HTMLElement;
-  updateAttributes(element, newNode.props ?? {}, oldNode.props ?? {});
+  const element = parent?.childNodes[index] as HTMLElement;
+  const newProps = typeof newNode === "object" && newNode !== null && "props" in newNode ? (newNode as any).props : {};
+  const oldProps = typeof oldNode === "object" && oldNode !== null && "props" in oldNode ? (oldNode as any).props : {};
+  updateAttributes(element, newProps, oldProps);
 
   // 6. newNode와 oldNode의 모든 자식 태그를 순회하며 1 ~ 5의 내용을 반복한다.
-  const newChildren = newNode.children || [];
-  const oldChildren = oldNode.children || [];
+  const newChildren =
+    typeof newNode === "object" && newNode !== null && "children" in newNode ? (newNode as any).children : [];
+  const oldChildren =
+    typeof oldNode === "object" && oldNode !== null && "children" in oldNode ? (oldNode as any).children : [];
   const maxLength = Math.max(newChildren.length, oldChildren.length);
 
-  for (let i = maxLength - 1; i >= 0; i--) {
+  for (let i = maxLength - 1; i >= newChildren.length; i--) {
+    if (oldChildren[i]) {
+      updateElement(element, undefined, oldChildren[i], i);
+    }
+  }
+
+  for (let i = 0; i < newChildren.length; i++) {
     updateElement(element, newChildren[i], oldChildren[i], i);
   }
 }

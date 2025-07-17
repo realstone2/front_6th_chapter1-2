@@ -13,7 +13,7 @@ export function renderElement(vNode: NormalizeVNodeType, container: HTMLElement)
   // 이전에 렌더링한 VNode가 있는지 확인
   const prevVNode = containerVNodeMap.get(container);
 
-  if (true) {
+  if (!prevVNode) {
     const normalizedVNode = normalizeVNode(vNode);
     const element = createElement(normalizedVNode);
     // 최초 렌더링
@@ -25,10 +25,7 @@ export function renderElement(vNode: NormalizeVNodeType, container: HTMLElement)
   }
 
   const newNormalizedVNode = normalizeVNode(vNode);
-  const newElement = createElement(newNormalizedVNode);
 
-  // 리렌더링
-  // container.replaceChildren(element);
   updateElement(container, newNormalizedVNode, prevVNode, 0);
   setupEventListeners(container);
   containerVNodeMap.set(container, newNormalizedVNode); // 이전 VNode 업데이트
